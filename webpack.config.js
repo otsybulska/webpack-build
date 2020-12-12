@@ -6,39 +6,48 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const OptimizeCssAssetWebpackPlugin = require('optimize-css-assets-webpack-plugin')
 const TerserWebpackPlugin = require('terser-webpack-plugin')
 
+const isDev = process.env.NODE_ENV === 'development'
+const isProd = !isDev
+
 module.exports = {
-    context: path.resolve(__dirname, '#src'),
+    context: path.resolve(__dirname, './#src'),
     entry: ['@babel/polyfill', './index.js'],
     output: {
         filename: 'bundle.js',
-        path: path.resolve(__dirname, 'dist')
+        path: path.resolve(__dirname, './dist')
     },
     resolve: {
         extensions: ['.js', '.ts']
     },
     optimization: {
-        /*splitChunks: {
-            chunks: 'all'
-        },*/
         minimizer: [
             new OptimizeCssAssetWebpackPlugin({}),
             new TerserWebpackPlugin({})
         ]
     },
     devServer: {
-        contentBase: path.resolve(__dirname, 'dist')
+        hot: isDev,
+        historyApiFallback: true,
+        contentBase: path.resolve(__dirname, './dist'),
+        open: true,
+        compress: true,
+        hot: true,
+        port: 8080,
     },
     plugins: [
         new HTMLWebpackPlugin({
             filename: 'index.html',
-            template: './index.html'
+            template: './index.html',
+            minify: {
+                collapseWhitespace: isProd
+            }
         }),
         new CleanWebpackPlugin(),
         new CopyWebpackPlugin({
             patterns: [
                 {
-                    from: path.resolve(__dirname, './#src/favicon.ico'),
-                    to: path.resolve(__dirname, 'dist')
+                    from: path.resolve(__dirname, './#src/assets/'),
+                    to: path.resolve(__dirname, './dist/assets/')
                 }
             ]
         }),
@@ -49,15 +58,7 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.css$/,
-                use: [MiniCssExtractPlugin.loader, 'css-loader']
-            },
-            {
-                test: /\.less$/,
-                use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader']
-            },
-            {
-                test: /\.s[ac]ss$/,
+                test: /\.(css|s[ac]ss)$/,
                 use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']
             },
             {
@@ -69,9 +70,15 @@ module.exports = {
                 use: ['file-loader']
             },
             { 
-                test: /\.(js|ts)$/, 
+                test: /\.js$/, 
                 exclude: /node_modules/, 
-                loader: 'babel-loader' 
+                loader: 'babel-loader',
+                options: {
+                    presets: ['@babel/preset-env'],
+                    plugins: [
+                        '@babel/plugin-proposal-class-properties'
+                    ]
+                }
             }
         ]
     }

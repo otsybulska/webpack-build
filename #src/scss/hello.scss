@@ -1,0 +1,30 @@
+.hello {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    height: 100vh;
+    padding: 30px 15px;
+    background: linear-gradient(to bottom, #fad7a1, #e96d71);
+    text-align: center;
+    text-transform: uppercase;
+    color: white;
+
+    // .hello__top
+    &__top {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        img {
+            width: 100px;
+            height: 100px;
+        }
+
+        h1 {
+            padding: 30px;
+            font-weight: 400;
+        }
+    }
+}
