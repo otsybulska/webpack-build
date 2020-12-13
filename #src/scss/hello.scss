@@ -27,4 +27,13 @@
             font-weight: 400;
         }
     }
+
+    // .hello__js
+    &__js {
+        margin-top: 20px;
+        img {
+            width: 150px;
+            height: 150px;
+        }
+    }
 }

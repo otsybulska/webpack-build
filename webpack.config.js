@@ -1,4 +1,6 @@
 const path = require('path')
+const webpack = require('webpack')
+const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin');
 const HTMLWebpackPlugin = require('html-webpack-plugin')
 const {CleanWebpackPlugin} = require('clean-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
@@ -9,11 +11,30 @@ const TerserWebpackPlugin = require('terser-webpack-plugin')
 const isDev = process.env.NODE_ENV === 'development'
 const isProd = !isDev
 
+const jsLoaders = () => {
+    const loaders = [
+    {
+        loader: 'babel-loader',
+        options: {
+        presets: ['@babel/preset-env']
+        }
+        }
+    ];
+
+    if (isDev) {
+        loaders.push('eslint-loader');
+    }
+    return loaders;
+};
+
 module.exports = {
+    target: "web",
     context: path.resolve(__dirname, './#src'),
-    entry: ['@babel/polyfill', './index.js'],
+    entry: {
+        main: ['@babel/polyfill', './index.js']
+    },
     output: {
-        filename: 'bundle.js',
+        filename: '[contenthash].bundle.js',
         path: path.resolve(__dirname, './dist')
     },
     resolve: {
@@ -26,23 +47,29 @@ module.exports = {
         ]
     },
     devServer: {
-        hot: isDev,
-        historyApiFallback: true,
-        contentBase: path.resolve(__dirname, './dist'),
-        open: true,
-        compress: true,
-        hot: true,
-        port: 8080,
+        compress: true
     },
+    devtool: isDev ? 'source-map' : false,
     plugins: [
+        new CleanWebpackPlugin(),
+        new ImageMinimizerPlugin({
+            minimizerOptions: {
+                plugins: [
+                    ['gifsicle', { interlaced: true }],
+                    ['jpegtran', { progressive: true }],
+                    ['optipng', { optimizationLevel: 7 }],
+                    ['svgo', { plugins: [{ removeViewBox: false }] } ],
+                ],
+            },
+        }),
         new HTMLWebpackPlugin({
             filename: 'index.html',
             template: './index.html',
             minify: {
-                collapseWhitespace: isProd
+                collapseWhitespace: isProd,
+                removeComments: isProd
             }
         }),
-        new CleanWebpackPlugin(),
         new CopyWebpackPlugin({
             patterns: [
                 {
@@ -52,8 +79,9 @@ module.exports = {
             ]
         }),
         new MiniCssExtractPlugin({
-            filename: 'styles.css'
-        })
+            filename: 'styles.[contenthash].css'
+        }),
+        new webpack.HotModuleReplacementPlugin()
     ],
     module: {
         rules: [
@@ -62,23 +90,17 @@ module.exports = {
                 use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']
             },
             {
-                test: /\.(jpg|png|gif|svg)$/,
-                use: ['file-loader']
+                test: /\.(jpe?g|png|gif|svg)$/i,
+                type: 'asset/resource'
             },
             {
-                test: /\.(eot|ttf|woff|woff2)$/,
-                use: ['file-loader']
+                test: /\.(eot|ttf|otf|woff|woff2)$/i,
+                type: 'asset/resource'
             },
             { 
                 test: /\.js$/, 
                 exclude: /node_modules/, 
-                loader: 'babel-loader',
-                options: {
-                    presets: ['@babel/preset-env'],
-                    plugins: [
-                        '@babel/plugin-proposal-class-properties'
-                    ]
-                }
+                use: jsLoaders()
             }
         ]
     }
