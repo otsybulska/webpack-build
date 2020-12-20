@@ -1,6 +1,5 @@
 const path = require('path')
 const webpack = require('webpack')
-const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin');
 const HTMLWebpackPlugin = require('html-webpack-plugin')
 const {CleanWebpackPlugin} = require('clean-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
@@ -11,13 +10,15 @@ const TerserWebpackPlugin = require('terser-webpack-plugin')
 const isDev = process.env.NODE_ENV === 'development'
 const isProd = !isDev
 
+const filename = ext => isDev ? `bundle.${ext}` : `bundle.[fullhash].${ext}`
+
 const jsLoaders = () => {
     const loaders = [
-    {
-        loader: 'babel-loader',
-        options: {
-        presets: ['@babel/preset-env']
-        }
+        {
+            loader: 'babel-loader',
+            options: {
+                presets: ['@babel/preset-env']
+            }
         }
     ];
 
@@ -28,13 +29,12 @@ const jsLoaders = () => {
 };
 
 module.exports = {
-    target: "web",
     context: path.resolve(__dirname, './#src'),
     entry: {
         main: ['@babel/polyfill', './index.js']
     },
     output: {
-        filename: '[contenthash].bundle.js',
+        filename: filename('js'),
         path: path.resolve(__dirname, './dist')
     },
     resolve: {
@@ -46,22 +46,13 @@ module.exports = {
             new TerserWebpackPlugin({})
         ]
     },
+    devtool: isDev ? 'source-map' : false,
+    target: 'web',
     devServer: {
         compress: true
     },
-    devtool: isDev ? 'source-map' : false,
     plugins: [
         new CleanWebpackPlugin(),
-        new ImageMinimizerPlugin({
-            minimizerOptions: {
-                plugins: [
-                    ['gifsicle', { interlaced: true }],
-                    ['jpegtran', { progressive: true }],
-                    ['optipng', { optimizationLevel: 7 }],
-                    ['svgo', { plugins: [{ removeViewBox: false }] } ],
-                ],
-            },
-        }),
         new HTMLWebpackPlugin({
             filename: 'index.html',
             template: './index.html',
@@ -79,14 +70,14 @@ module.exports = {
             ]
         }),
         new MiniCssExtractPlugin({
-            filename: 'styles.[contenthash].css'
+            filename: filename('css')
         }),
         new webpack.HotModuleReplacementPlugin()
     ],
     module: {
         rules: [
             {
-                test: /\.(css|s[ac]ss)$/,
+                test: /\.(css|s[ac]ss)$/i,
                 use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']
             },
             {
@@ -98,7 +89,7 @@ module.exports = {
                 type: 'asset/resource'
             },
             { 
-                test: /\.js$/, 
+                test: /\.js$/i, 
                 exclude: /node_modules/, 
                 use: jsLoaders()
             }
